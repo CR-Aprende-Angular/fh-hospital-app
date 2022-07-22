@@ -6,8 +6,9 @@ import Swal from 'sweetalert2';
 import { Hospital } from '../../../models/hospital.model';
 
 import { BusquedasService } from '../../../services/busquedas.service';
-import { HospitalService } from '../../../services/hospital.service';
+import { ContactService } from '../../../services/contact.service';
 import { ModalImagenService } from '../../../services/modal-imagen.service';
+import { Contact } from '../../../models/contact.model';
 
 @Component({
   selector: 'app-contacts',
@@ -17,11 +18,11 @@ import { ModalImagenService } from '../../../services/modal-imagen.service';
 })
 export class ContactsComponent implements OnInit, OnDestroy {
 
-  public hospitales: Hospital[] = [];
+  public contacts: Contact[] = [];
   public cargando: boolean = true;
   private imgSubs: Subscription;
 
-  constructor( private hospitalService: HospitalService,
+  constructor( private contactService: ContactService,
                private modalImagenService: ModalImagenService,
                private busquedasService: BusquedasService ) { }
 
@@ -30,70 +31,70 @@ export class ContactsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.cargarHospitales();
+    this.cargarContactos();
 
     this.imgSubs = this.imgSubs = this.modalImagenService.nuevaImagen
       .pipe(delay(100))
-      .subscribe( img => this.cargarHospitales() );
+      .subscribe( img => this.cargarContactos() );
   }
 
   buscar( termino: string ) {
 
     if ( termino.length === 0 ) {
-      return this.cargarHospitales();
+      return this.cargarContactos();
     }
 
-    this.busquedasService.buscar( 'hospitales', termino )
+    this.busquedasService.buscar( 'contacts', termino )
         .subscribe( resp => {
 
-          this.hospitales = resp;
+          this.contacts = resp; // aca hay un problema con el atributo name, que es obligatorio
 
         });
   }
 
-  cargarHospitales() {
+  cargarContactos() {
 
     this.cargando = true;
-    this.hospitalService.cargarHospitales()
+    this.contactService.getContacts()
         .subscribe( hospitales => {
           this.cargando = false;
-          this.hospitales = hospitales;
+          this.contacts = hospitales;
         })
 
   }
 
-  guardarCambios( hospital: Hospital ) {
+  guardarCambios( contact: Contact ) {
 
-    this.hospitalService.actualizarHospital( hospital._id, hospital.nombre )
+    this.contactService.updateContact( contact._id, contact.name )
         .subscribe( resp => {
-          Swal.fire( 'Actualizado', hospital.nombre, 'success' );
+          Swal.fire( 'Actualizado', contact.name, 'success' );
         });
 
   }
 
-  eliminarHospital( hospital: Hospital ) {
+  deleteContact( contact: Contact ) {  console.log(contact);
 
-    this.hospitalService.borrarHospital( hospital._id )
+    this.contactService.deleteContact( contact._id )
         .subscribe( resp => {
-          this.cargarHospitales();
-          Swal.fire( 'Borrado', hospital.nombre, 'success' );
+          this.cargarContactos();
+          Swal.fire( 'Borrado', contact.name, 'success' );
         });
 
   }
 
   async abrirSweetAlert() {
     const { value = '' } = await Swal.fire<string>({
-      title: 'Crear hospital',
-      text: 'Ingrese el nombre del nuevo hospital',
+      title: 'Crear contacto',
+      text: 'Ingrese el nombre del nuevo contacto',
       input: 'text',
-      inputPlaceholder: 'Nombre del hospital',
+      inputPlaceholder: 'Nombre del contacto',
       showCancelButton: true,
     });
     
     if( value.trim().length > 0 ) {
-      this.hospitalService.crearHospital( value )
+      this.contactService.createContact( value )
         .subscribe( (resp: any) => {
-          this.hospitales.push( resp.hospital )
+          this.contacts.push( resp.contact )
         })
     }
   }
